@@ -263,4 +263,191 @@ elif menu == "Gamified Quests":
               add_xp(80)
               st.rerun()
           else:
-            st.error(f"Incorrect result: Expected 420.0, got {
+            st.error(f"Incorrect result: Expected 420.0, got {val}")
+        else:
+          st.error("Function `calculate_stress` was not found.")
+      except Exception as e:
+        st.error(f"Syntax/Runtime Error: {e}")
+
+# ---------------------------------------------------------
+# 4. INTERACTIVE LABORATORY
+# ---------------------------------------------------------
+elif menu == "Interactive Laboratory":
+  st.title("🧪 Interactive Engineering Sandboxes")
+  st.markdown(
+      "Adjust physical model variables and inspect both the rendered plot and"
+      " the live Python code."
+  )
+
+  sim_choice = st.selectbox(
+      "Choose Interactive Model",
+      ["Microbial Growth Kinetics (Biotech)", "Bilinear Stress-Strain (Materials)"],
+  )
+
+  if sim_choice == "Microbial Growth Kinetics (Biotech)":
+    c1, c2 = st.columns([1, 2])
+    with c1:
+      st.markdown("#### Input Parameters")
+      N0 = st.slider("Initial Cells (N0)", 100, 5000, 1000, step=100)
+      K = st.slider("Carrying Capacity (K)", 10000, 100000, 50000, step=5000)
+      r = st.slider("Growth Rate (r)", 0.1, 1.0, 0.4, step=0.05)
+      t_max = st.slider("Time Span (Hours)", 5, 24, 12)
+
+    with c2:
+      # Computation
+      t = np.linspace(0, t_max, 200)
+      # Logistic growth formula
+      N = K / (1 + ((K - N0) / N0) * np.exp(-r * t))
+
+      fig = go.Figure()
+      fig.add_trace(
+          go.Scatter(
+              x=t,
+              y=N,
+              mode="lines",
+              name="Logistic Curve",
+              line=dict(color="#00E676", width=3),
+          )
+      )
+      fig.update_layout(
+          title="Bacterial Logistic Growth Curve",
+          xaxis_title="Time (Hours)",
+          yaxis_title="Population Count (N)",
+          template="plotly_dark",
+      )
+      st.plotly_chart(fig, use_container_width=True)
+
+    with st.expander("📄 View Executed Python Code"):
+      st.code(
+          f"""import numpy as np
+import plotly.graph_objects as go
+
+# Parameters
+N0 = {N0}
+K = {K}
+r = {r}
+t = np.linspace(0, {t_max}, 200)
+
+# Logistic Equation Implementation
+N = K / (1 + ((K - N0) / N0) * np.exp(-r * t))
+
+# Plotting using Plotly
+fig = go.Figure(data=go.Scatter(x=t, y=N, mode='lines'))
+fig.show()
+""",
+          language="python",
+      )
+
+  else:
+    c1, c2 = st.columns([1, 2])
+    with c1:
+      st.markdown("#### Material Parameters")
+      E = st.slider("Young's Modulus E (GPa)", 50, 220, 100)
+      sy = st.slider("Yield Strength (MPa)", 100, 800, 300)
+      E_post = st.slider("Tangent Modulus (GPa)", 1, 20, 5)
+
+    with c2:
+      strain_yield = (sy / (E * 1000))
+      strain = np.linspace(0, 0.05, 300)
+      stress = np.where(
+          strain <= strain_yield,
+          strain * E * 1000,
+          sy + (strain - strain_yield) * E_post * 1000,
+      )
+
+      fig = go.Figure()
+      fig.add_trace(
+          go.Scatter(
+              x=strain,
+              y=stress,
+              mode="lines",
+              name="Elastoplastic Response",
+              line=dict(color="#FF9100", width=3),
+          )
+      )
+      fig.update_layout(
+          title="Bilinear Tensile Stress-Strain Response",
+          xaxis_title="Strain (ε)",
+          yaxis_title="Stress (σ MPa)",
+          template="plotly_dark",
+      )
+      st.plotly_chart(fig, use_container_width=True)
+
+    with st.expander("📄 View Executed Python Code"):
+      st.code(
+          f"""import numpy as np
+import plotly.graph_objects as go
+
+E = {E} * 1000 # Convert GPa to MPa
+sy = {sy}
+E_post = {E_post} * 1000
+
+strain_yield = sy / E
+strain = np.linspace(0, 0.05, 300)
+
+# Piecewise linear stress calculation
+stress = np.where(strain <= strain_yield, 
+                  strain * E, 
+                  sy + (strain - strain_yield) * E_post)
+""",
+          language="python",
+      )
+
+# ---------------------------------------------------------
+# 5. ESCAPE ROOM DEBUGGER
+# ---------------------------------------------------------
+elif menu == "Escape Room Debugger":
+  st.title("🚨 Lab Escape Room: Instrument Calibration")
+  st.markdown(
+      "A bug in the automated data loader is preventing laboratory"
+      " spectrophotometer readings. Fix the Python script to calibrate the"
+      " device and unlock the exit!"
+  )
+
+  st.code(
+      """# BROKEN SCRIPT:
+raw_readings = ["340nm", "420nm", "INVALID", "510nm", "600nm"]
+clean_data = []
+
+for entry in raw_readings:
+    # BUG: Raises ValueError when encountering "INVALID"
+    val = int(entry.replace("nm", ""))
+    clean_data.append(val)
+
+avg_wavelength = sum(clean_data) / len(clean_data)
+""",
+      language="python",
+  )
+
+  st.markdown("**Write a list comprehension or guarded loop to fix this:**")
+  user_fix = st.text_area(
+      "Corrected Python Logic:",
+      value=(
+          "clean_data = [int(x.replace('nm', '')) for x in raw_readings if"
+          " x.endswith('nm')]"
+      ),
+  )
+
+  if st.button("Run Debugger & Calibrate"):
+    raw_readings = ["340nm", "420nm", "INVALID", "510nm", "600nm"]
+    try:
+      local_scope = {"raw_readings": raw_readings}
+      exec(user_fix, {}, local_scope)
+
+      if "clean_data" in local_scope:
+        res = local_scope["clean_data"]
+        if res == [340, 420, 510, 600]:
+          st.balloons()
+          st.success(
+              "🎉 Calibration Complete! Clean data verified: [340, 420, 510,"
+              " 600]. Laboratory door unlocked!"
+          )
+          if "escape" not in st.session_state.quests_solved:
+            st.session_state.quests_solved.add("escape")
+            add_xp(100)
+        else:
+          st.error(f"Incorrect data extracted: {res}")
+      else:
+        st.error("Variable `clean_data` not found in output.")
+    except Exception as e:
+        st.error(f"Execution Error: {e}")
